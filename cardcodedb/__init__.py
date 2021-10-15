@@ -1,1 +1,1 @@
-import carddb
+from . import carddb
