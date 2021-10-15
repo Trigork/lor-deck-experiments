@@ -1,50 +1,12 @@
 import base64
 import math
 import varint
-import json
-import os
+from cardcodedb import carddb as cdb
 
 CARDCODE_LENGTH = 7
 MAX_KNOWN_VERSION = 4
 FORMAT = 1
 INITIAL_VERSION = 1
-
-file_path = os.path.dirname(os.path.realpath(__file__))
-root_path = os.path.dirname(file_path)
-db_path =  os.sep.join([root_path, "cardcodedb.json"])
-
-card_db = {}
-with open(db_path, encoding="utf8") as f:
-    card_db = json.load(f)
-
-def get_card_data(code: str) -> dict:
-    return card_db[code]
-
-faction_codes = {
-    "DE": 0,
-    "FR": 1,
-    "IO": 2,
-    "NX": 3,
-    "PZ": 4,
-    "SI": 5,
-    "BW": 6,
-    "SH": 7,
-    "MT": 9,
-    "BC": 10
-}
-
-faction_indexes = {
-    0: "DE",
-    1: "FR",
-    2: "IO",
-    3: "NX",
-    4: "PZ",
-    5: "SI",
-    6: "BW",
-    7: "SH",
-    9: "MT",
-    10: "BC"
-}
 
 faction_library_version = {
     "DE" : 1,
@@ -90,7 +52,7 @@ def decode_deck (code : str) -> list:
                 card = varint.pop_varint(bytelist)
 
                 set_string = f'{set:02}'
-                faction_string = faction_indexes[faction]
+                faction_string =  cdb.get_faction_code(faction)
                 card_string = f'{card:03}'
 
                 deck += [ (f"{set_string}{faction_string}{card_string}", idx)]
@@ -105,7 +67,7 @@ def decode_deck (code : str) -> list:
         four_plus_number = varint.pop_varint(bytelist)
 
         four_plus_set_string = f'{four_plus_set:02}'
-        four_plus_faction_string = faction_indexes[four_plus_faction]
+        four_plus_faction_string = cdb.get_faction_code(four_plus_faction)
         four_plus_card_string = f'{four_plus_number:03}'
 
         deck += [ (f"{four_plus_set_string}{four_plus_faction_string}{four_plus_card_string}", four_plus_count)]
@@ -160,7 +122,7 @@ def get_deck_bytes(decklist: list) -> list:
 def get_decklist(code_deck : dict) -> list:
     db_deck = []
     for card in code_deck:
-        cd = get_card_data(card[0])
+        cd = cdb.get_card_data(card[0])
         db_deck += [(card[1], cd)]
     
     db_deck.sort(key=lambda x: x[1]["cost"])
@@ -170,7 +132,7 @@ def get_classified_decklist(code_deck : dict) -> dict:
     classified_deck = { "champions" : [], "units" : [], "landmarks" : [], "spells" : [] }
 
     for card in code_deck:
-        cd = get_card_data(card[0])
+        cd = cdb.get_card_data(card[0])
         if cd["type"] == "unit" and cd["supertype"] == "champion":
             classified_deck["champions"] += [(card[1], cd)]
         if cd["type"] == "unit" and cd["supertype"] != "champion":
@@ -191,7 +153,7 @@ def are_valid_cardcodes_and_counts(decklist: list) -> bool:
         try:
             int(cardcode[:2])
             f = cardcode[2:4]
-            if not f in faction_codes.keys():
+            if not f in cdb.faction_codes.keys():
                 return False
             int(cardcode[4:])
         except ValueError as e:
@@ -246,7 +208,7 @@ def encode_group_of(bytelist : list, group_of : list):
         # what is this group?
         current_cardcode = current_list[0][0]
         setno, faction, number = parse_card_code(current_cardcode)
-        faction_no = faction_codes[faction]
+        faction_no = cdb.get_faction_id(faction)
         bytelist += varint.get_varint(setno)
         bytelist += varint.get_varint(faction_no)
 
@@ -261,7 +223,7 @@ def encode_nof(bytelist : list, nof : list):
         bytelist += varint.get_varint(len(nof))
 
         set_no, faction, number = parse_card_code(ccc[0])
-        faction_no = int(faction_codes[faction])
+        faction_no = cdb.get_faction_id(faction)
 
         bytelist += varint.get_varint(set_no)
         bytelist += varint.get_varint(faction_no)
