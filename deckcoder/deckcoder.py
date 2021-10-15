@@ -1,7 +1,7 @@
 import base64
 import math
-import varint
-from ..cardcodedb import carddb as cdb
+from .varint import get_varint, pop_varint
+from cardcodedb import carddb as cdb
 
 CARDCODE_LENGTH = 7
 MAX_KNOWN_VERSION = 4
@@ -39,17 +39,20 @@ def decode_deck (code : str) -> list:
     version = bytelist[0] & 0xF
     del bytelist[0]
 
+    if version > MAX_KNOWN_VERSION:
+        raise ValueError("The provided code requires a higher version of this library; please update.")
+
     for i in range(3):
         idx = 3-i
-        num_group_ofs = varint.pop_varint(bytelist)
+        num_group_ofs = pop_varint(bytelist)
         
         for j in range(num_group_ofs):
-            num_ofs_in_this_group = varint.pop_varint(bytelist)
-            set = varint.pop_varint(bytelist)
-            faction = varint.pop_varint(bytelist)
+            num_ofs_in_this_group = pop_varint(bytelist)
+            set = pop_varint(bytelist)
+            faction = pop_varint(bytelist)
 
             for k in range(num_ofs_in_this_group):
-                card = varint.pop_varint(bytelist)
+                card = pop_varint(bytelist)
 
                 set_string = f'{set:02}'
                 faction_string =  cdb.get_faction_code(faction)
@@ -61,10 +64,10 @@ def decode_deck (code : str) -> list:
     # this will only happen in Limited and special game modes.
     # the encoding is simply [count] [cardcode]
     while (len(bytelist) > 0):
-        four_plus_count = varint.pop_varint(bytelist)
-        four_plus_set = varint.pop_varint(bytelist)
-        four_plus_faction = varint.pop_varint(bytelist)
-        four_plus_number = varint.pop_varint(bytelist)
+        four_plus_count = pop_varint(bytelist)
+        four_plus_set = pop_varint(bytelist)
+        four_plus_faction = pop_varint(bytelist)
+        four_plus_number = pop_varint(bytelist)
 
         four_plus_set_string = f'{four_plus_set:02}'
         four_plus_faction_string = cdb.get_faction_code(four_plus_faction)
@@ -103,7 +106,7 @@ def get_deck_bytes(decklist: list) -> list:
 
     grouped_of3s = get_grouped_ofs(of3)
     grouped_of2s = get_grouped_ofs(of2)
-    grouped_of1s = get_grouped_ofs(of2)
+    grouped_of1s = get_grouped_ofs(of1)
 
     grouped_of3s = sort_group_of(grouped_of3s)
     grouped_of2s = sort_group_of(grouped_of2s)
@@ -200,31 +203,31 @@ def parse_card_code(code : str) -> tuple:
     return (set, faction, id)
 
 def encode_group_of(bytelist : list, group_of : list):
-    bytelist += varint.get_varint(len(group_of))
+    bytelist += get_varint(len(group_of))
     for current_list in group_of:
         # how many cards in group?
-        bytelist += varint.get_varint(len(current_list))
+        bytelist += get_varint(len(current_list))
 
         # what is this group?
         current_cardcode = current_list[0][0]
         setno, faction, number = parse_card_code(current_cardcode)
         faction_no = cdb.get_faction_id(faction)
-        bytelist += varint.get_varint(setno)
-        bytelist += varint.get_varint(faction_no)
+        bytelist += get_varint(setno)
+        bytelist += get_varint(faction_no)
 
         # what are the cards?
         for cardcode,count in current_list:
             number = int(cardcode[4:])
-            bytelist += varint.get_varint(number)
+            bytelist += get_varint(number)
 
 
 def encode_nof(bytelist : list, nof : list):
     for ccc in nof:
-        bytelist += varint.get_varint(len(nof))
+        bytelist += get_varint(ccc[1])
 
         set_no, faction, number = parse_card_code(ccc[0])
         faction_no = cdb.get_faction_id(faction)
 
-        bytelist += varint.get_varint(set_no)
-        bytelist += varint.get_varint(faction_no)
-        bytelist += varint.get_varint(number)
+        bytelist += get_varint(set_no)
+        bytelist += get_varint(faction_no)
+        bytelist += get_varint(number)

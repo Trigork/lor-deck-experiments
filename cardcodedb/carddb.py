@@ -48,4 +48,4 @@ def get_faction_id(faction_code : str) -> int:
     return faction_codes[faction_code]
 
 def get_random_cardcode() -> str:
-    return random.choice(card_db.keys())
+    return random.choice(list(card_db.keys()))

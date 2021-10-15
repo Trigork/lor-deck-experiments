@@ -1,5 +1,5 @@
 
-from ..cardcodedb import carddb as cdb
+from cardcodedb import carddb as cdb
 
 class Card:
     set : int
@@ -35,6 +35,7 @@ class CardAndQuantity:
         return (self.card.get_cardcode(), self.quantity)
 
 
+print(cdb.get_random_cardcode())
 
 
         
