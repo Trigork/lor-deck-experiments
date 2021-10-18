@@ -1,6 +1,7 @@
 import pytest
 import base64
 from deckcoder import deckcoder
+import math
 
 class Helpers:
     @staticmethod
@@ -19,6 +20,15 @@ class Helpers:
                 return False
         
         return True
+    
+    @staticmethod
+    def extract_version_from_deckcode(code : str) -> int:
+        deck = []
+        pad_length = math.ceil(len(code) / 8) * 8 - len(code)
+        padcode = code + '=' * pad_length
+        deckbytes = base64.b32decode(padcode)
+        bytelist = list(deckbytes)
+        return bytelist[0] & 0xF
 
 class TestDeckCoder:
     @pytest.fixture()
@@ -251,107 +261,79 @@ class TestDeckCoder:
         bytes_from_deck = list(base64.b32decode(deckcoder.encode_deck(deck)))
         bytes_from_deck[0] = 0x58
 
-        try:
+        with pytest.raises(ValueError) as e_info:
             bad_version_deck_code = base64.b32encode(bytearray(bytes_from_deck)).decode('utf-8').strip("=")
             deck_bad = deckcoder.decode_deck(bad_version_deck_code)
-        except ValueError as ve:
             expected = "The provided code requires a higher version of this library; please update."
-            exception_msg = str(ve)
+            exception_msg = str(e_info)
             assert expected == exception_msg
             
     def test_bad_card_codes(self):
         deck = []
         deck += [('01DE02', 1)]
-
-        failed = False
-        try:
+        with pytest.raises(ValueError) as e_info:
             code = deckcoder.encode_deck(deck)
-        except ValueError as ve:
-            failed = True
-        except Exception as e:
-            assert False
-        assert failed
 
         failed = False
         deck = []
         deck += [('01XX002', 1)]  
-        failed = False
-        try:
+        with pytest.raises(ValueError) as e_info:
             code = deckcoder.encode_deck(deck)
-        except ValueError as ve:
-            failed = True
-        except Exception as e:
-            assert False
-        assert failed
 
         failed = False
         deck = []
-        deck += [('01DE002', 0)]  
-        failed = False
-        try:
+        deck += [('01DE002', 0)]
+        with pytest.raises(ValueError) as e_info:
             code = deckcoder.encode_deck(deck)
-        except ValueError as ve:
-            failed = True
-        except Exception as e:
-            assert False
-        assert failed
-
+        
     def test_bad_count(self):
         failed = False
         deck = []
         deck += [('01DE002', 0)]  
-        failed = False
-        try:
+        with pytest.raises(ValueError) as e_info:
             code = deckcoder.encode_deck(deck)
-        except ValueError as ve:
-            failed = True
-        except Exception as e:
-            assert False
-        assert failed
 
-        failed = False
         deck = []
         deck += [('01DE002', -1)]  
-        failed = False
-        try:
+        with pytest.raises(ValueError) as e_info:
             code = deckcoder.encode_deck(deck)
-        except ValueError as ve:
-            failed = True
-        except Exception as e:
-            assert False
-        assert failed
     
     def test_garbage_decoding(self):
         not_base32 = "I'm no card code!"
         bad_base32 = "ABCDEFG"
         bad_empty = ""
 
-        failed = False
-        try:
-            deck = deckcoder.decode_deck(not_base32)
-        except ValueError as ve:
-            failed = True
-        except Exception as e:
-            assert False
-        assert failed
+        with pytest.raises(ValueError) as e_info:
+            deckcoder.decode_deck(not_base32)
 
-        failed = False
-        try:
-            deck = deckcoder.decode_deck(bad_base32)
-        except ValueError as ve:
-            failed = True
-        except Exception as e:
-            assert False
-        assert failed
+        with pytest.raises(ValueError) as e_info:
+            deckcoder.decode_deck(bad_base32)
 
-        failed = False
-        try:
-            deck = deckcoder.decode_deck(bad_empty)
-        except ValueError as ve:
-            failed = True
-        except Exception as e:
-            assert False
-        assert failed
+        with pytest.raises(ValueError) as e_info:
+            deckcoder.decode_deck(bad_empty)
+    
+    @pytest.mark.parametrize("config", [("DE",1), ("FR", 1), ("IO",1), ("NX", 1), ("PZ",1), ("SI", 1),
+        ("BW",2), ("MT", 2), ("SH",3), ("BC", 4)])
+    def test_deckversion_is_minimum_libraryversion_that_supports_the_contianed_factions(self, config):
+        faction = config[0]
+        version = config[1]
+
+        decklist = []
+        decklist += [('01DE001', 1)]
+        decklist += [(f'01{faction}002', 1)]
+        decklist += [(f'01FR001', 1)]
+
+        code = deckcoder.encode_deck(decklist)
+
+        minversion = Helpers.extract_version_from_deckcode(code)
+
+        assert version == minversion
+    
+    def test_fail_futureversion(self):
+        single_card_deck_version5 = "CUAAAAIBAUAAC"
+
+        with pytest.raises(ValueError) as e_info:
+            deckcoder.decode_deck(single_card_deck_version5)
 
 
 

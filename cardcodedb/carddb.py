@@ -36,16 +36,25 @@ with open(db_path, encoding="utf8") as f:
     card_db = json.load(f)
 
 def get_card_data(code: str) -> dict:
-    return card_db[code]
+    if code in card_db.keys():
+        return card_db[code]
+    else:
+        raise ValueError(f"There is no card for cardcode {code}. Try updating the DB plugin.")
 
 def card_exists(code: str) -> bool:
     return code in card_db.keys()
 
 def get_faction_code(faction_no : int) -> str:
-    return faction_indexes[faction_no]
+    if faction_no in faction_indexes.keys():
+        return faction_indexes[faction_no]
+    else:
+        raise ValueError(f"Unknown Faction with ID: {faction_no}")
 
 def get_faction_id(faction_code : str) -> int:
-    return faction_codes[faction_code]
+    if faction_code in faction_codes.keys():
+        return faction_codes[faction_code]
+    else:
+        raise ValueError(f"Unknown Faction Code: {faction_code}")
 
 def get_random_cardcode() -> str:
     return random.choice(list(card_db.keys()))

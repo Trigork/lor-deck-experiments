@@ -2,6 +2,7 @@ import base64
 import math
 from .varint import get_varint, pop_varint
 from cardcodedb import carddb as cdb
+import binascii
 
 CARDCODE_LENGTH = 7
 MAX_KNOWN_VERSION = 4
@@ -30,9 +31,15 @@ def decode_deck (code : str) -> list:
     
     pad_length = math.ceil(len(code) / 8) * 8 - len(code)
     padcode = code + '=' * pad_length
-    deckbytes = base64.b32decode(padcode)
+    try:
+        deckbytes = base64.b32decode(padcode)
+    except binascii.Error as error:
+        raise ValueError("Invalid deck code")
 
     bytelist = list(deckbytes)
+
+    if len(bytelist) == 0:
+        raise ValueError("Empty deck code")
     
     # grab format and version
     format = bytelist[0] >> 4
