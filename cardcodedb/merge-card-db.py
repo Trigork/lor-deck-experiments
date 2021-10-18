@@ -4,7 +4,20 @@ import zipfile
 import wget
 from shutil import copyfile
 
-REDOWNLOAD = True
+region_codes = {
+    "Demacia" : "DE",
+    "Freljord" : "FR",
+    "Noxus" : "NX",
+    "PiltoverZaun" : "PZ",
+    "ShadowIsles" : "SI",
+    "Targon" : "MT",
+    "BandleCity" : "BC",
+    "Bilgewater" : "BW",
+    "Shurima" : "SH",
+    "Ionia" : "IO"
+}
+
+REDOWNLOAD = False
 
 file_path = os.path.dirname(os.path.realpath(__file__))
 sets_path =  os.sep.join([file_path, "sets"])
@@ -58,9 +71,11 @@ for fname,path in list_of_files.items():
             cardcode_db.update({card["cardCode"] : {
                 "name" : card["name"],
                 "region" : card["region"],
+                "region_codes" : [ region_codes[r] for r in card["regionRefs"] ],
                 "cost" : card["cost"],
                 "type" : card["type"].lower(),
-                "supertype" : card["supertype"].lower()
+                "supertype" : card["supertype"].lower(),
+                "is_token" : not card["collectible"]
                 }
             })
 

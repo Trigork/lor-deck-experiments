@@ -137,7 +137,7 @@ class TestDeckCoder:
         decoded = deckcoder.decode_deck(code)
 
         assert True == Helpers.verify_rehydration(decklist, decoded)
-
+    
     def test_worst_case_length(self):
         decklist = []
         decklist += [('01DE002', 4)]

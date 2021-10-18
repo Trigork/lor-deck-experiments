@@ -56,5 +56,36 @@ def get_faction_id(faction_code : str) -> int:
     else:
         raise ValueError(f"Unknown Faction Code: {faction_code}")
 
+def card_belongs_to_factions(code, factions):
+    if card_exists(code):
+        card = get_card_data(code)
+        regions = set(card['region_codes'])
+        s_factions = set(factions)
+        count = len(regions.intersection(s_factions))
+        if count >= 1:
+            return True
+        else:
+            return False
+    else:
+        return False
+
+def get_cards_from_factions(factions : list, allow_tokens=False) -> dict:
+    return dict(filter(lambda elem: (card_belongs_to_factions(elem[0], factions)) and (not elem[1]['is_token'] or allow_tokens) , card_db.items()))
+
+def get_cards_from_sets(set_ids : list, allow_tokens=False) -> dict:
+    return dict(filter(lambda elem: int(elem[0][:2]) in set_ids and (not elem[1]['is_token'] or allow_tokens), card_db.items()))
+
+def get_cards_from_sets_and_factions(set_ids : list, factions :list, allow_tokens=False) -> dict:
+    return dict(filter(lambda elem: int(elem[0][:2]) in set_ids and (card_belongs_to_factions(elem[0], factions)) and (not elem[1]['is_token'] or allow_tokens), card_db.items()))
+
 def get_random_cardcode() -> str:
     return random.choice(list(card_db.keys()))
+
+def get_random_cardcode_from_factions(factions : list) -> str:
+    return random.choice(list(get_cards_from_factions(factions).keys()))
+
+def get_random_cardcode_from_sets(set_ids : list) -> str:
+    return random.choice(list(get_cards_from_sets(set_ids).keys()))
+
+def get_random_cardcode_from_sets_and_factions(set_ids : list, factions : list) -> str:
+    return random.choice(list(get_cards_from_sets_and_factions(set_ids, factions).keys()))
