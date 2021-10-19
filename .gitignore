@@ -1,4 +1,3 @@
-cardcodedb/sets/**/**
-cardcodedb/code_sets/**/**
 .vscode/**/**
 **/**/*.pyc
+**/*.pyc
