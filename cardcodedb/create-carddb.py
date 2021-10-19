@@ -27,7 +27,7 @@ def main():
     set_data = {}
     for setno in range(1,999):
         try:
-            url = f'https://dd.b.pvp.net/latest/set{setno}/{args.locale}/data/set{setno}-{args.locale}.json'
+            url = f'https://dd.b.pvp.net/latest/set{setno}/{args.locale.lower()}/data/set{setno}-{args.locale.lower()}.json'
             resp = requests.get(url=url)
             data = resp.json()
             set_data[setno] = data
